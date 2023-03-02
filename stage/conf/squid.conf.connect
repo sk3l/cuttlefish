@@ -1,0 +1,15 @@
+acl sourceip src {{source_ip}}
+
+acl SSL_ports port 443
+
+acl CONNECT method CONNECT
+http_access deny !SSL_ports
+http_access deny CONNECT !SSL_ports
+http_access allow sourceip
+http_access deny all
+http_port {{listen_port}}
+
+coredump_dir /var/spool/squid
+
+cache deny all
+logfile_rotate 0
