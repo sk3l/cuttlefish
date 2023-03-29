@@ -2,6 +2,7 @@
 #MINOR?=1
 
 #VERSION=$(MAJOR).$(MINOR)
+SHELL:=/bin/bash
 
 APP_NAME:=cuttlefish
 APP_PREFIX:=sk3l
@@ -18,7 +19,7 @@ CONT_NAME:="$(APP_NAME)"
 CUR_DIR:= $(shell echo "${PWD}")
 MKFILE_DIR:=$(shell dirname $(realpath $(firstword $(MAKEFILE_LIST))))
 
-DOCKER_MNT?=""
+DOCKER_MNT?=
 ifeq (${DEBUG}, 1)
     DOCKER_MNT=-v "${MKFILE_DIR}:/debug"
 endif
@@ -53,13 +54,14 @@ build: ## Build the container image
 		echo "config default";									\
 	fi;															\
 	PORT_ARG="--build-arg listen_port=$(LISTEN_PORT)"; 			\
-	SQUID_ARG="--build-arg squid_params=$$SQUID_PARAMS"; 		\
+	SQUID_ARG="--build-arg squid_args=$$SQUID_PARAMS"; 		\
+	echo "Squid parameters = $$SQUID_ARG";						\
 	docker build $$PORT_ARG $$SQUID_ARG --tag $(IMAGE_NAME) .;	\
 	rm -f $(MKFILE_DIR)/conf/squid.conf
 
 .PHONY: create
 create: ## Create the container instance
-	docker create --name ${CONT_NAME} ${BT_DB_MNT} ${IMAGE_NAME}
+	docker create --name ${CONT_NAME} ${DOCKER_MNT} ${IMAGE_NAME}
 
 .PHONY: init
 init: build create
