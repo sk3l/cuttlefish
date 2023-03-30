@@ -26,16 +26,15 @@ ifeq (${DEBUG}, 1)
     CF_MOUNT=-v "${MKFILE_DIR}:/debug"
 endif
 
+##
 # Network config
 CF_NET_NAME?="cfnet"
 CF_NET_CIDR?=192.168.45.0/24
 CF_NET_IP?=192.168.45.10
-CF_NET_PORT?=3128
+CF_NET_PORT?=8011
 CF_NET_PUB?="0.0.0.0:${CF_NET_PORT}:${CF_NET_PORT}"
 
-
-CONF_NAME:=default
-LISTEN_PORT:=3128
+CONF_NAME:=NEW
 
 # HELP
 # This will output the help for each task
