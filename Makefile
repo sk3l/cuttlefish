@@ -19,10 +19,20 @@ CONT_NAME:="$(APP_NAME)"
 CUR_DIR:= $(shell echo "${PWD}")
 MKFILE_DIR:=$(shell dirname $(realpath $(firstword $(MAKEFILE_LIST))))
 
-DOCKER_MNT?=
+##
+# Shared mount config
+CF_MOUNT?=
 ifeq (${DEBUG}, 1)
-    DOCKER_MNT=-v "${MKFILE_DIR}:/debug"
+    CF_MOUNT=-v "${MKFILE_DIR}:/debug"
 endif
+
+# Network config
+CF_NET_NAME?="cfnet"
+CF_NET_CIDR?=192.168.45.0/24
+CF_NET_IP?=192.168.45.10
+CF_NET_PORT?=3128
+CF_NET_PUB?="0.0.0.0:${CF_NET_PORT}:${CF_NET_PORT}"
+
 
 CONF_NAME:=default
 LISTEN_PORT:=3128
@@ -46,25 +56,38 @@ build: ## Build the container image
 	if [ $(CONF_NAME) = "connect" ]; then 						\
 	    echo "config connect"; 									\
 		SQUID_PARAMS"=$$SQUID_PARAMS –enable-storeio=null"; 	\
-		sed -i "s/{{source_ip}}/$(SOURCE_IP)/" 					\
+		sed -i "s/{{source_ip}}/$(CF_NET_IP)/" 					\
 			$(MKFILE_DIR)/stage/conf/squid.conf;				\
-		sed -i "s/{{listen_port}}/$(LISTEN_PORT)/" 				\
+		sed -i "s/{{listen_port}}/$(CF_NET_PORT)/" 				\
 			$(MKFILE_DIR)/stage/conf/squid.conf;				\
 	else    													\
 		echo "config default";									\
 	fi;															\
-	PORT_ARG="--build-arg listen_port=$(LISTEN_PORT)"; 			\
-	SQUID_ARG="--build-arg squid_args=$$SQUID_PARAMS"; 		\
+	PORT_ARG="--build-arg listen_port=$(CF_NET_PORT)"; 			\
+	SQUID_ARG="--build-arg squid_args=$$SQUID_PARAMS";          \
 	echo "Squid parameters = $$SQUID_ARG";						\
 	docker build $$PORT_ARG $$SQUID_ARG --tag $(IMAGE_NAME) .;	\
 	rm -f $(MKFILE_DIR)/conf/squid.conf
 
+.PHONY: network
+network: ## Setup container network
+	@if ! docker network inspect $(CF_NET_NAME) > /dev/null 2>&1; then     \
+		echo "Creating Docker network $(CF_NET_NAME)";                     \
+		docker network create --subnet=$(CF_NET_CIDR) $(CF_NET_NAME);      \
+	fi
+
 .PHONY: create
-create: ## Create the container instance
-	docker create --name ${CONT_NAME} ${DOCKER_MNT} ${IMAGE_NAME}
+create: network ## Create the container instance
+	docker create                \
+		--name $(CONT_NAME)      \
+		--network=$(CF_NET_NAME) \
+		--ip=$(CF_NET_IP)        \
+		--publish=$(CF_NET_PUB)  \
+		$(CF_MOUNT)              \
+		${IMAGE_NAME}
 
 .PHONY: init
-init: build create
+init: build network create
 
 .PHONY: start
 start: ## Run container on port configured in `config.env`
