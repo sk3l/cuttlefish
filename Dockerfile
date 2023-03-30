@@ -14,7 +14,13 @@ RUN set -eux; \
 	apt-get update; \
 	DEBIAN_FRONTEND=noninteractive apt-get full-upgrade -y; \
 	DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
-		squid ca-certificates tzdata net-tools; \
+		apache2-utils     \
+		ca-certificates   \
+		less              \
+		net-tools         \
+		squid             \
+		tzdata            \
+		vim;              \
 	DEBIAN_FRONTEND=noninteractive apt-get remove --purge --auto-remove -y; \
 	rm -rf /var/lib/apt/lists/*; \
 	# smoketest
@@ -32,7 +38,6 @@ EXPOSE $listen_port
 ##
 # Setup start script
 COPY ./stage/entrypoint.sh /entrypoint.sh
-#COPY ./stage/entrypoint-debug.sh /entrypoint-debug.sh
 
 ENV SQUID_OPTIONS=$squid_args
 CMD /entrypoint.sh -f /etc/squid/squid.conf $SQUID_OPTIONS
