@@ -4,4 +4,4 @@
 - on/off switching (via SSH?)
 - coordination of multi-node routing
  - load balancing/round robin?
-- authentication?
+- ~authentication~
